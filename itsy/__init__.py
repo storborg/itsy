@@ -5,7 +5,7 @@ monkey.patch_all()
 
 from Queue import Queue, Empty
 
-from . import client
+from .client import Client
 from .document import Document
 
 
@@ -24,16 +24,17 @@ class Task(object):
 class Worker(Greenlet):
 
     def __init__(self, id, itsy):
+        Greenlet.__init__(self)
         self.id = id
         self.itsy = itsy
-        Greenlet.__init__(self)
+        self.client = Client()
 
     def one(self):
         task = self.itsy.pop()
         print "%d: Handling task: [%s] %s" % (self.id,
                                               task.document_type,
                                               task.url)
-        raw = client.get(url=task.url, referer=task.referer)
+        raw = self.client.get(url=task.url, referer=task.referer)
 
         handler = self.itsy.handlers[task.document_type]
         doc = Document(task, raw)
