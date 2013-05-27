@@ -3,10 +3,9 @@ import gevent
 from gevent import Greenlet, monkey
 monkey.patch_all()
 
-from Queue import Queue, Empty
-
 from .client import Client
 from .document import Document
+from .queue import Queue, Empty
 
 
 sentinel = object()
@@ -14,11 +13,14 @@ sentinel = object()
 
 class Task(object):
 
-    def __init__(self, url, document_type, referer=sentinel, interval=None):
+    def __init__(self, url, document_type, referer=sentinel, interval=None,
+                 high_priority=False):
         self.url = url
         self.document_type = document_type
         self.referer = referer
         self.interval = interval
+        self.high_priority = high_priority
+        self.scheduled_timestamp = 0
 
 
 class Worker(Greenlet):
@@ -72,14 +74,14 @@ class Itsy(object):
     def pop(self):
         while True:
             try:
-                return self.queue.get(True, 5)
+                return self.queue.pop()
             except Empty:
                 print "TIMEOUT"
 
     def push(self, task):
-        self.queue.put(task)
+        self.queue.push(task)
 
-    def crawl(self, num_workers=20):
+    def crawl(self, num_workers=5):
         workers = []
         for ii in range(num_workers):
             worker = Worker(ii, self)
