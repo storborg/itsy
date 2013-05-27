@@ -1,6 +1,6 @@
 import requests
 import gevent
-from gevent import monkey
+from gevent import Greenlet, monkey
 monkey.patch_all()
 
 from Queue import Queue, Empty
@@ -19,6 +19,35 @@ class Task(object):
         self.document_type = document_type
         self.referer = referer
         self.interval = interval
+
+
+class Worker(Greenlet):
+
+    def __init__(self, id, itsy):
+        self.id = id
+        self.itsy = itsy
+        Greenlet.__init__(self)
+
+    def one(self):
+        task = self.itsy.pop()
+        print "%d: Handling task: [%s] %s" % (self.id,
+                                              task.document_type,
+                                              task.url)
+        raw = client.get(url=task.url, referer=task.referer)
+
+        handler = self.itsy.handlers[task.document_type]
+        doc = Document(task, raw)
+        result = handler(task, doc)
+        if result:
+            for new_task in result:
+                print "  -> [%s] %s" % (new_task.document_type, new_task.url)
+                if new_task.referer == sentinel:
+                    new_task.referer = task.url
+                self.itsy.push(new_task)
+
+    def _run(self):
+        while True:
+            self.one()
 
 
 class Itsy(object):
@@ -49,28 +78,10 @@ class Itsy(object):
     def push(self, task):
         self.queue.put(task)
 
-    def one(self, id):
-        task = self.pop()
-        print "%d: Handling task: [%s] %s" % (id, task.document_type, task.url)
-        raw = client.get(url=task.url, referer=task.referer)
-
-        handler = self.handlers[task.document_type]
-        doc = Document(task, raw)
-        result = handler(task, doc)
-        if result:
-            for new_task in result:
-                print "  -> [%s] %s" % (new_task.document_type, new_task.url)
-                if new_task.referer == sentinel:
-                    new_task.referer = task.url
-                self.push(new_task)
-
-    def worker(self, id):
-        while True:
-            self.one(id)
-            gevent.sleep(1)
-
     def crawl(self, num_workers=20):
         workers = []
         for ii in range(num_workers):
-            workers.append(gevent.spawn(self.worker, ii))
+            worker = Worker(ii, self)
+            worker.start()
+            workers.append(worker)
         gevent.joinall(workers)
