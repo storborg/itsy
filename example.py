@@ -48,7 +48,8 @@ def main():
     itsy.add_seed('https://github.com/explore/week', 'explore')
 
     # Check this one every 12 hours.
-    itsy.add_seed('http://github.com/explore', 'explore', timedelta(hours=12))
+    itsy.add_seed('http://github.com/explore', 'explore',
+                  interval=timedelta(hours=12))
 
     itsy.crawl()
 
