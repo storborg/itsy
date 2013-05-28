@@ -18,6 +18,7 @@ setup(name="itsy",
           'redis',
           'simplejson',
           'lxml',
+          'cssselect',
           'requests',
           # These are for tests.
           'coverage',
