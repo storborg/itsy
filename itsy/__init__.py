@@ -1,7 +1,11 @@
-import requests
+import sys
+from gevent import monkey
+monkey.patch_all(thread=False)
+
 import gevent
-from gevent import Greenlet, monkey
-monkey.patch_all()
+from gevent import Greenlet
+
+import requests
 
 from .client import Client
 from .document import Document
