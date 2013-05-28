@@ -1,6 +1,3 @@
-from datetime import datetime
-from decimal import Decimal
-
 from . import Task
 from .client import Client
 from .document import Document
@@ -21,15 +18,3 @@ def test_handler(handler, url):
             print "    %r" % new_task
     else:
         print "  Did not yield new tasks."
-
-
-def calendar_date(s):
-    s = s.strip()
-    return datetime.strptime(s, '%b %d, %Y')
-
-
-def currency(s):
-    s = s.strip()
-    s = s.strip('$')
-    s = s.replace(',', '')
-    return Decimal(s)
