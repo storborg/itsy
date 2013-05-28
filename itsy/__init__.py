@@ -26,6 +26,9 @@ class Task(object):
         self.high_priority = high_priority
         self.scheduled_timestamp = 0
 
+    def __repr__(self):
+        return '<Task %s [%s]>' % (self.url, self.document_type)
+
 
 class Worker(Greenlet):
 
