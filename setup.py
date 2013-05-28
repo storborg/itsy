@@ -20,6 +20,7 @@ setup(name="itsy",
           'lxml',
           'cssselect',
           'requests',
+          'iso8601',
           # These are for tests.
           'coverage',
           'nose>=1.1',
