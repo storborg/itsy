@@ -63,3 +63,7 @@ def href(els):
     assert len(els) == 1
     el = els[0]
     return el.attrib['href']
+
+
+def hrefs(els):
+    return [el.attrib['href'] for el in els]
