@@ -1,3 +1,6 @@
+import urlparse
+import urllib
+
 from . import Task
 from .client import Client
 from .document import Document
@@ -18,3 +21,20 @@ def test_handler(handler, url):
             print "    %r" % new_task
     else:
         print "  Did not yield new tasks."
+
+
+def strip_param(url, key):
+    """
+    Strip a GET parameter from a URL.
+    """
+    o = urlparse.urlparse(url)
+    params = urlparse.parse_qs(o[4])
+    if key in params:
+        del params[key]
+    new_url = urlparse.urlunparse((o.scheme,
+                                   o.netloc,
+                                   o.path,
+                                   o.params,
+                                   urllib.urlencode(params),
+                                   o.fragment))
+    return new_url
