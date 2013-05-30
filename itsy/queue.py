@@ -1,34 +1,4 @@
-"""
-A work queue implementation to serve itsy. Uses redis.
-
-Basically the goal is to support these mechanisms:
-
-    - Enqueue a crawl task (which is a Task instance)
-    - Enqueue a crawl task to be executed no earlier than time X
-    - Enqueue a crawl task at a high priority (high priority tasks have a
-      separate queue which is always checked first)
-    - Dequeue a crawl task
-
-The rough idea is to use a sorted set per queue.
-
-Enqueue like this:
-
-ZADD todo <scheduled epoch> <task ID>
-
-Then dequeue like this:
-
-WATCH todo
-element = ZRANGEBYSCORE todo 0 <current epoch> LIMIT 0 1
-MULTI
-ZREM todo element
-EXEC
-
-Which should be a nonblocking pop of the next task ID which has a scheduled
-time prior to now.
-
-TODO
-- Figure out how to support a global rate limit or a per-domain rate limit.
-"""
+from datetime import timedelta
 import pickle
 import hashlib
 import time
@@ -43,7 +13,64 @@ class Empty(Exception):
     pass
 
 
+class Task(object):
+    DEFAULT_REFERER = object()
+
+    def __init__(self, url, document_type, referer=DEFAULT_REFERER,
+                 interval=None, scheduled_timestamp=0, high_priority=False,
+                 min_age=3600):
+        self.url = url
+        self.document_type = document_type
+        self.referer = referer
+        self.high_priority = high_priority
+        self.scheduled_timestamp = scheduled_timestamp
+
+        if isinstance(interval, timedelta):
+            self.interval = interval.total_seconds()
+        else:
+            self.interval = interval
+
+        if isinstance(min_age, timedelta):
+            self.min_age = min_age.total_seconds()
+        else:
+            self.min_age = min_age
+
+    def __repr__(self):
+        return '<Task %s [%s]>' % (self.url, self.document_type)
+
+
 class Queue(object):
+    """
+    A work queue implementation to serve itsy. Uses redis.
+
+    Basically the goal is to support these mechanisms:
+
+        - Enqueue a crawl task (which is a Task instance)
+        - Enqueue a crawl task to be executed no earlier than time X
+        - Enqueue a crawl task at a high priority (high priority tasks have a
+          separate queue which is always checked first)
+        - Dequeue a crawl task
+
+    The rough idea is to use a sorted set per queue.
+
+    Enqueue like this:
+
+    ZADD todo <scheduled epoch> <task ID>
+
+    Then dequeue like this:
+
+    WATCH todo
+    element = ZRANGEBYSCORE todo 0 <current epoch> LIMIT 0 1
+    MULTI
+    ZREM todo element
+    EXEC
+
+    Which should be a nonblocking pop of the next task ID which has a scheduled
+    time prior to now.
+
+    TODO
+    - Figure out how to support a global rate limit or a per-domain rate limit.
+    """
 
     def __init__(self, host='localhost', port=6379, db=0):
         self.redis = StrictRedis(host=host, port=port, db=db)

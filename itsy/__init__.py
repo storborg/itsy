@@ -10,32 +10,7 @@ import requests
 
 from .client import Client
 from .document import Document
-from .queue import Queue, Empty
-
-
-sentinel = object()
-
-
-class Task(object):
-
-    def __init__(self, url, document_type, referer=sentinel, interval=None,
-                 scheduled_timestamp=0, high_priority=False, min_age=3600):
-        self.url = url
-        self.document_type = document_type
-        self.referer = referer
-        if isinstance(interval, timedelta):
-            self.interval = interval.total_seconds()
-        else:
-            self.interval = interval
-        self.high_priority = high_priority
-        self.scheduled_timestamp = scheduled_timestamp
-        if isinstance(min_age, timedelta):
-            self.min_age = min_age.total_seconds()
-        else:
-            self.min_age = min_age
-
-    def __repr__(self):
-        return '<Task %s [%s]>' % (self.url, self.document_type)
+from .queue import Task, Queue, Empty
 
 
 class Worker(Greenlet):
@@ -59,7 +34,7 @@ class Worker(Greenlet):
         if result:
             for new_task in result:
                 print "  -> [%s] %s" % (new_task.document_type, new_task.url)
-                if new_task.referer == sentinel:
+                if new_task.referer == Task.DEFAULT_REFERER:
                     new_task.referer = task.url
                 self.itsy.push(new_task)
 
