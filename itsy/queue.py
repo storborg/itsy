@@ -81,7 +81,8 @@ class Queue(object):
             while True:
                 try:
                     pipe.watch(queue_name)
-                    elements = pipe.zrangebyscore(queue_name, min=0, max=cutoff,
+                    elements = pipe.zrangebyscore(queue_name, min=0,
+                                                  max=cutoff,
                                                   start=0, num=1)
                     if elements:
                         key = elements[0]
