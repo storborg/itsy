@@ -12,6 +12,7 @@ def string(els):
 
 
 def integer_single(s):
+    s = s.strip().replace(',', '')
     return int(s)
 
 
@@ -39,10 +40,18 @@ def isodate(els):
 
 def currency_single(s):
     print "  currency_single(%r)" % s
-    s = s.strip('$')
+    s = s.strip()
+    if s.startswith('$'):
+        units = 'usd'
+        s = s[1:]
+    elif s.startswith(u'\xa3'):
+        units = 'gbp'
+        s = s[1:]
+    else:
+        raise ValueError("doesn't start with a currency symbol")
     s = s.replace(',', '')
     try:
-        return Decimal(s)
+        return units, Decimal(s)
     except InvalidOperation:
         raise ValueError("couldn't convert to currency")
 

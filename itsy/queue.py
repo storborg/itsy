@@ -56,25 +56,50 @@ class Queue(object):
     def deserialize(self, s):
         return pickle.loads(s)
 
+    def set_url_timestamp(self, url):
+        key = hashlib.md5(url).hexdigest()
+        self.redis.set('url:%s' % key, '%d' % time.time())
+
+    def get_url_timestamp(self, url):
+        key = hashlib.md5(url).hexdigest()
+        s = self.redis.get('url:%s' % key)
+        if s:
+            return int(s)
+
     def push(self, task):
         """
-        Enqueue a new task.
-
-        - Create a new task ID.
-        - Serialize the task.
-        - Store the task with SET.
-        - Enqueue the task ID to the appropriate sorted set.
+        Enqueue a new crawl task.
         """
+        # Check the last time the URL was crawled.
+        last_crawl = self.get_url_timestamp(task.url)
+
+        # If it was crawled recently enough that the next scheduled time will
+        # result in a recrawl sooner than min_age, bump out the scheduled time
+        # accordingly.
+        if last_crawl:
+            earliest_crawl = last_crawl + task.min_age
+            print "DELAYING due to min age by %d seconds" % (
+                earliest_crawl - task.scheduled_timestamp)
+            task.scheduled_timestamp = max(task.scheduled_timestamp,
+                                           earliest_crawl)
+
+        # Serialize the task.
         s = self.serialize(task)
+
+        # Create a task ID using the md5 of the serialized task.
         key = hashlib.md5(s).hexdigest()
 
+        # Store the task by ID.
         self.redis.set(key, s)
 
+        # Enqueue teh task ID to the appropriate sorted set, which acts as a
+        # scheduled task queue.
         # FIXME it would be nice if this would use a key that's unique to the
         # project, so that multiple itsy instances could use the same redis
         # server.
         queue_name = 'todo-hp' if task.high_priority else 'todo'
         self.redis.zadd(queue_name, float(task.scheduled_timestamp), key)
+        print "CURRENTLY %r TASKS QUEUED" % self.redis.zcard(queue_name)
 
     def pop_queue(self, queue_name, cutoff):
         with self.redis.pipeline() as pipe:
@@ -106,16 +131,31 @@ class Queue(object):
 
         If there is no next task ID on any queue raise Empty().
         """
+        # Pop a task ID, if there is one that's scheduled.
         now = time.time()
         for queue_name in ('todo-hp', 'todo'):
             key = self.pop_queue(queue_name, now)
             if key:
                 break
 
+        # If we didn't get a task ID, raise Empty()
         if not key:
             raise Empty()
-        assert key
 
+        # If we did, fetch the task and deserialize it.
         s = self.redis.get(key)
         self.redis.delete(key)
-        return self.deserialize(s)
+        task = self.deserialize(s)
+
+        # Record a timestamp for the URL.
+        self.set_url_timestamp(task.url)
+
+        # If the task has an interval, reschedule it.
+        if task.interval:
+            repeat_task = Task(url=task.url,
+                               document_type=document_type,
+                               interval=task.interval,
+                               scheduled_timestamp=now + task.interval)
+            self.push(repeat_task)
+
+        return task

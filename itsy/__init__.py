@@ -1,6 +1,8 @@
 from gevent import monkey
 monkey.patch_all(thread=False)
 
+from datetime import timedelta
+
 import gevent
 from gevent import Greenlet
 
@@ -17,13 +19,20 @@ sentinel = object()
 class Task(object):
 
     def __init__(self, url, document_type, referer=sentinel, interval=None,
-                 high_priority=False):
+                 scheduled_timestamp=0, high_priority=False, min_age=3600):
         self.url = url
         self.document_type = document_type
         self.referer = referer
-        self.interval = interval
+        if isinstance(interval, timedelta):
+            self.interval = interval.total_seconds()
+        else:
+            self.interval = interval
         self.high_priority = high_priority
-        self.scheduled_timestamp = 0
+        self.scheduled_timestamp = scheduled_timestamp
+        if isinstance(min_age, timedelta):
+            self.min_age = min_age.total_seconds()
+        else:
+            self.min_age = min_age
 
     def __repr__(self):
         return '<Task %s [%s]>' % (self.url, self.document_type)
@@ -57,6 +66,7 @@ class Worker(Greenlet):
     def _run(self):
         while True:
             self.one()
+            gevent.sleep(2)
 
 
 class Itsy(object):
