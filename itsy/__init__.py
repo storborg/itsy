@@ -36,7 +36,7 @@ class Worker(Greenlet):
         Greenlet.__init__(self)
         self.id = id
         self.itsy = itsy
-        self.client = Client()
+        self.client = Client(proxies=itsy.proxies)
 
     def one(self):
         task = self.itsy.pop()
@@ -62,9 +62,10 @@ class Worker(Greenlet):
 
 class Itsy(object):
 
-    def __init__(self):
+    def __init__(self, proxies=None):
         self.handlers = {}
         self.queue = Queue()
+        self.proxies = proxies
 
     def add_handler(self, document_type, func):
         assert document_type not in self.handlers
