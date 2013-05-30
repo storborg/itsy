@@ -5,7 +5,6 @@ import iso8601
 
 
 def string(els):
-    print "  string(%r)" % els
     if isinstance(els, basestring):
         return els.strip()
     return ''.join(el.text_content().strip() for el in els)
@@ -17,7 +16,6 @@ def integer_single(s):
 
 
 def integer(els):
-    print "  int(%r)" % els
     s = string(els)
     for chunk in s.split():
         try:
@@ -28,7 +26,6 @@ def integer(els):
 
 
 def calendar_date(els):
-    print "  calendar_date(%r)" % els
     s = string(els)
     return datetime.strptime(s, '%b %d, %Y')
 
@@ -39,7 +36,6 @@ def isodate(els):
 
 
 def currency_single(s):
-    print "  currency_single(%r)" % s
     s = s.strip()
     if s.startswith('$'):
         units = 'usd'
@@ -57,7 +53,6 @@ def currency_single(s):
 
 
 def currency(els):
-    print "  currency(%r)" % els
     s = string(els)
     for chunk in s.split():
         try:
@@ -68,7 +63,6 @@ def currency(els):
 
 
 def href(els):
-    print "  href(%r)" % els
     assert len(els) == 1
     el = els[0]
     return el.attrib['href']

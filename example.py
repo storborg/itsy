@@ -2,7 +2,7 @@ from datetime import timedelta
 
 from lxml.cssselect import CSSSelector
 
-from itsy import Itsy, Task
+from itsy import Itsy, Task, configure_logging
 
 
 def explore_handler(task, doc):
@@ -55,4 +55,5 @@ def main():
 
 
 if __name__ == '__main__':
+    configure_logging()
     main()

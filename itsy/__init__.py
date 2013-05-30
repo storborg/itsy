@@ -1,6 +1,10 @@
 from gevent import monkey
 monkey.patch_all(thread=False)
 
+import logging
+import logging.config
+import sys
+
 from datetime import timedelta
 
 import gevent
@@ -11,6 +15,8 @@ import requests
 from .client import Client
 from .document import Document
 from .queue import Task, Queue, Empty
+
+log = logging.getLogger(__name__)
 
 
 class Worker(Greenlet):
@@ -23,9 +29,8 @@ class Worker(Greenlet):
 
     def one(self):
         task = self.itsy.pop()
-        print "%d: Handling task: [%s] %s" % (self.id,
-                                              task.document_type,
-                                              task.url)
+        log.info("%d: Handling task: [%s] %s",
+                 self.id, task.document_type, task.url)
         raw = self.client.get(url=task.url, referer=task.referer)
 
         handler = self.itsy.handlers[task.document_type]
@@ -33,7 +38,9 @@ class Worker(Greenlet):
         result = handler(task, doc)
         if result:
             for new_task in result:
-                print "  -> [%s] %s" % (new_task.document_type, new_task.url)
+                log.info("%d    -> [%s] %s%s",
+                         self.id, new_task.document_type, new_task.url,
+                         " HP" if new_task.high_priority else "")
                 if new_task.referer == Task.DEFAULT_REFERER:
                     new_task.referer = task.url
                 self.itsy.push(new_task)
@@ -68,7 +75,7 @@ class Itsy(object):
             try:
                 return self.queue.pop()
             except Empty:
-                print "TIMEOUT"
+                log.warn("TIMEOUT")
 
     def push(self, task):
         self.queue.push(task)
@@ -80,3 +87,38 @@ class Itsy(object):
             worker.start()
             workers.append(worker)
         gevent.joinall(workers)
+
+
+def configure_logging():
+    logging.config.dictConfig({
+        'formatters': {
+            'generic': {
+                'datefmt': '%H:%M:%S',
+                'format':
+                '%(asctime)s,%(msecs)03d %(levelname)s [%(name)s] %(message)s'
+            },
+        },
+        'handlers': {
+                'console': {
+                    'class': 'logging.StreamHandler',
+                    'formatter': 'generic',
+                    'level': 'NOTSET',
+                    'stream': sys.stderr,
+                },
+                'null': {
+                    'class': 'logging.NullHandler',
+                },
+        },
+        'loggers': {
+            'itsy': {
+                'handlers': ['console'],
+                'level': 'DEBUG',
+                'propagate': False,
+            },
+        },
+        'root': {
+            'handlers': ['null'],
+            'level': 'INFO',
+        },
+        'version': 1,
+    })

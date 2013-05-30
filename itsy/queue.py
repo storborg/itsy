@@ -1,9 +1,13 @@
+import logging
+
 from datetime import timedelta
 import pickle
 import hashlib
 import time
 
 from redis import StrictRedis, WatchError
+
+log = logging.getLogger(__name__)
 
 
 class Empty(Exception):
@@ -105,8 +109,8 @@ class Queue(object):
         # accordingly.
         if last_crawl:
             earliest_crawl = last_crawl + task.min_age
-            print "DELAYING due to min age by %d seconds" % (
-                earliest_crawl - task.scheduled_timestamp)
+            log.error("DELAYING due to min age by %d seconds",
+                      earliest_crawl - task.scheduled_timestamp)
             task.scheduled_timestamp = max(task.scheduled_timestamp,
                                            earliest_crawl)
 
@@ -126,7 +130,6 @@ class Queue(object):
         # server.
         queue_name = 'todo-hp' if task.high_priority else 'todo'
         self.redis.zadd(queue_name, float(task.scheduled_timestamp), key)
-        print "CURRENTLY %r TASKS QUEUED" % self.redis.zcard(queue_name)
 
     def pop_queue(self, queue_name, cutoff):
         with self.redis.pipeline() as pipe:
