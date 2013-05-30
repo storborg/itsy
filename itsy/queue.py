@@ -180,7 +180,7 @@ class Queue(object):
         # If the task has an interval, reschedule it.
         if task.interval:
             repeat_task = Task(url=task.url,
-                               document_type=document_type,
+                               document_type=task.document_type,
                                interval=task.interval,
                                scheduled_timestamp=now + task.interval)
             self.push(repeat_task)
