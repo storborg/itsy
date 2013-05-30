@@ -36,7 +36,7 @@ def stargazers_handler(task, doc):
 
 
 def main():
-    itsy = Itsy()
+    itsy = Itsy('example')
 
     itsy.add_handler('repo', repo_handler)
     itsy.add_handler('user', user_handler)

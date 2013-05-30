@@ -76,7 +76,8 @@ class Queue(object):
     - Figure out how to support a global rate limit or a per-domain rate limit.
     """
 
-    def __init__(self, host='localhost', port=6379, db=0):
+    def __init__(self, name, host='localhost', port=6379, db=0):
+        self.name = name
         self.redis = StrictRedis(host=host, port=port, db=db)
         # XXX Temporary
         self.redis.flushall()
@@ -87,13 +88,19 @@ class Queue(object):
     def deserialize(self, s):
         return pickle.loads(s)
 
+    def prefix_key(self, prefix, key):
+        return ':'.join([self.name, prefix, key])
+
+    def queue_key(self, high_priority):
+        return self.prefix_key('todo', 'hp' if high_priority else 'nn')
+
     def set_url_timestamp(self, url):
         key = hashlib.md5(url).hexdigest()
-        self.redis.set('url:%s' % key, '%d' % time.time())
+        self.redis.set(self.prefix_key('urlts', key), '%d' % time.time())
 
     def get_url_timestamp(self, url):
         key = hashlib.md5(url).hexdigest()
-        s = self.redis.get('url:%s' % key)
+        s = self.redis.get(self.prefix_key('urlts', key))
         if s:
             return int(s)
 
@@ -118,33 +125,31 @@ class Queue(object):
         s = self.serialize(task)
 
         # Create a task ID using the md5 of the serialized task.
-        key = hashlib.md5(s).hexdigest()
+        task_id = hashlib.md5(s).hexdigest()
 
         # Store the task by ID.
-        self.redis.set(key, s)
+        self.redis.set(task_id, s)
 
         # Enqueue teh task ID to the appropriate sorted set, which acts as a
         # scheduled task queue.
-        # FIXME it would be nice if this would use a key that's unique to the
-        # project, so that multiple itsy instances could use the same redis
-        # server.
-        queue_name = 'todo-hp' if task.high_priority else 'todo'
-        self.redis.zadd(queue_name, float(task.scheduled_timestamp), key)
+        key = self.queue_key(task.high_priority)
+        self.redis.zadd(key, float(task.scheduled_timestamp), task_id)
 
-    def pop_queue(self, queue_name, cutoff):
+    def pop_queue(self, high_priority, cutoff):
+        key = self.queue_key(high_priority)
         with self.redis.pipeline() as pipe:
             while True:
                 try:
-                    pipe.watch(queue_name)
-                    elements = pipe.zrangebyscore(queue_name, min=0,
+                    pipe.watch(key)
+                    elements = pipe.zrangebyscore(key, min=0,
                                                   max=cutoff,
                                                   start=0, num=1)
                     if elements:
-                        key = elements[0]
+                        task_id = elements[0]
                         pipe.multi()
-                        pipe.zrem(queue_name, key)
+                        pipe.zrem(key, task_id)
                         pipe.execute()
-                        return key
+                        return task_id
                     else:
                         return
                 except WatchError:
@@ -163,8 +168,8 @@ class Queue(object):
         """
         # Pop a task ID, if there is one that's scheduled.
         now = time.time()
-        for queue_name in ('todo-hp', 'todo'):
-            key = self.pop_queue(queue_name, now)
+        for high_priority in (True, False):
+            key = self.pop_queue(high_priority, now)
             if key:
                 break
 

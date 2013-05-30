@@ -5,8 +5,6 @@ import logging
 import logging.config
 import sys
 
-from datetime import timedelta
-
 import gevent
 from gevent import Greenlet
 
@@ -20,7 +18,9 @@ log = logging.getLogger(__name__)
 
 
 class Worker(Greenlet):
-
+    """
+    An itsy worker. You should never have to use this directly.
+    """
     def __init__(self, id, itsy):
         Greenlet.__init__(self)
         self.id = id
@@ -52,10 +52,12 @@ class Worker(Greenlet):
 
 
 class Itsy(object):
-
-    def __init__(self, proxies=None):
+    """
+    The ringleader of the Itsy web scraping framework.
+    """
+    def __init__(self, name, proxies=None):
         self.handlers = {}
-        self.queue = Queue()
+        self.queue = Queue(name)
         self.proxies = proxies
 
     def add_handler(self, document_type, func):
@@ -90,6 +92,9 @@ class Itsy(object):
 
 
 def configure_logging():
+    """
+    Helper to configure logging for a command-line script which uses Itsy.
+    """
     logging.config.dictConfig({
         'formatters': {
             'generic': {
@@ -99,15 +104,15 @@ def configure_logging():
             },
         },
         'handlers': {
-                'console': {
-                    'class': 'logging.StreamHandler',
-                    'formatter': 'generic',
-                    'level': 'NOTSET',
-                    'stream': sys.stderr,
-                },
-                'null': {
-                    'class': 'logging.NullHandler',
-                },
+            'console': {
+                'class': 'logging.StreamHandler',
+                'formatter': 'generic',
+                'level': 'NOTSET',
+                'stream': sys.stderr,
+            },
+            'null': {
+                'class': 'logging.NullHandler',
+            },
         },
         'loggers': {
             'itsy': {

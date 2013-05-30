@@ -2,6 +2,10 @@ import requests
 
 
 class Client(object):
+    """
+    HTTP client interface owned by an Itsy worker. May be customized with user
+    agent and proxy configuration.
+    """
     default_user_agent = ('Mozilla/5.0 (compatible; Googlebot/2.1; '
                           '+http://www.google.com/bot.html)')
 
