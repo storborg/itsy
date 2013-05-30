@@ -23,7 +23,7 @@ def integer(els):
             return integer_single(chunk)
         except ValueError:
             pass
-    raise ValueError("couldn't find an integer here")
+    raise ValueError("couldn't find an integer in: %r" % s)
 
 
 def calendar_date(els):
@@ -55,7 +55,7 @@ def currency(els):
             return currency_single(chunk)
         except ValueError:
             pass
-    raise ValueError("couldn't find a currency here")
+    raise ValueError("couldn't find a currency in: %r" % s)
 
 
 def href(els):
