@@ -49,7 +49,7 @@ def main():
 
     # Check this one every 12 hours.
     itsy.add_seed('http://github.com/explore', 'explore',
-                  interval=timedelta(hours=12))
+                  repeat_after=timedelta(hours=12))
 
     itsy.crawl()
 

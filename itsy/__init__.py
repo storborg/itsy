@@ -41,8 +41,7 @@ class Worker(Greenlet):
                 log.info("%d    -> [%s] %s%s",
                          self.id, new_task.document_type, new_task.url,
                          " HP" if new_task.high_priority else "")
-                if new_task.referer == Task.DEFAULT_REFERER:
-                    new_task.referer = task.url
+                new_task.set_originating_task(task)
                 self.itsy.push(new_task)
 
     def _run(self):
@@ -64,9 +63,9 @@ class Itsy(object):
         assert document_type not in self.handlers
         self.handlers[document_type] = func
 
-    def add_seed(self, url, document_type, referer=None, interval=None):
+    def add_seed(self, url, document_type, referer=None, repeat_after=None):
         self.push(Task(url=url, document_type=document_type,
-                       referer=referer, interval=interval))
+                       referer=referer, repeat_after=repeat_after))
 
     def fetch(self, url, referer):
         r = requests.get(url)

@@ -9,7 +9,7 @@ class TestQueue(TestCase):
     def test_roundtrip(self):
         task = Task('http://www.example.com', 'plain')
 
-        q = Queue()
+        q = Queue('test')
         q.push(task)
 
         task2 = q.pop()
