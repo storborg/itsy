@@ -63,7 +63,8 @@ def currency(els):
 
 
 def href(els):
-    assert len(els) == 1
+    if len(els) != 1:
+        raise ValueError("got wrong # of elements for href: %r" % els)
     el = els[0]
     return el.attrib['href']
 
