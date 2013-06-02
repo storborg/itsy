@@ -90,11 +90,11 @@ class Itsy(object):
         gevent.joinall(workers)
 
 
-def configure_logging():
+def configure_logging(package_name=None):
     """
     Helper to configure logging for a command-line script which uses Itsy.
     """
-    logging.config.dictConfig({
+    config = {
         'formatters': {
             'generic': {
                 'datefmt': '%H:%M:%S',
@@ -125,4 +125,11 @@ def configure_logging():
             'level': 'INFO',
         },
         'version': 1,
-    })
+    }
+    if package_name:
+        config['loggers'][package_name] = {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': False,
+        }
+    logging.config.dictConfig(config)
