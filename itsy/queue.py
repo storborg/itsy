@@ -229,3 +229,15 @@ class Queue(object):
             self.push(repeat_task)
 
         return task
+
+    def count(self):
+        """
+        Return the number of currently enqueued tasks.
+        """
+        counts = []
+        for high_priority in (True, False):
+            key = self.pick_queue_key(high_priority)
+            counts.append(self.redis.zcard(key))
+
+        return {'high': counts[0],
+                'normal': counts[1]}
