@@ -69,7 +69,7 @@ class Queue(object):
         self.canonicalize_url = url_canonicalizer or (lambda url: url)
         self.redis = StrictRedis(host='localhost', port=6379, db=0)
         # XXX Temporary
-        self.redis.flushall()
+        #self.redis.flushall()
 
     def serialize(self, task):
         return pickle.dumps(task)
