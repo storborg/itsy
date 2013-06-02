@@ -18,7 +18,7 @@ def test_handler(handler, url):
     raw = client.get(url, None)
     doc = Document(t, raw)
     log.warn("  Applying handler...")
-    new_tasks = handler(t, doc)
+    new_tasks = handler(t, doc, testing=True)
     if new_tasks:
         log.warn("  Yielded new tasks:")
         for new_task in new_tasks:
