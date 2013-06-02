@@ -15,8 +15,8 @@ def test_handler(handler, url):
     t = Task(url=url, document_type=None, referer=None)
     log.warn("  Fetching url: %s", url)
     client = Client()
-    raw = client.get(url, None)
-    doc = Document(t, raw)
+    r = client.get(url, None)
+    doc = Document(t, r)
     log.warn("  Applying handler...")
     new_tasks = handler(t, doc, testing=True)
     if new_tasks:

@@ -28,9 +28,10 @@ class Fragment(ExtractorMixin):
 
 class Document(ExtractorMixin):
 
-    def __init__(self, task, raw):
+    def __init__(self, task, resp):
         self.task = task
-        self.raw = raw
+        self.resp = resp
+        self.raw = resp.text
 
     @property
     def json(self):

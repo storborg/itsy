@@ -23,5 +23,4 @@ class Client(object):
 
         if referer:
             headers['Referer'] = referer
-        r = requests.get(url, headers=headers, proxies=self.proxies)
-        return r.text
+        return requests.get(url, headers=headers, proxies=self.proxies)

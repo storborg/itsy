@@ -11,6 +11,7 @@ class TestClient(TestCase):
         }
         client = Client(proxies=proxies)
 
-        body = client.get('http://www.cartlogic.com/ip', None)
+        resp = client.get('http://www.cartlogic.com/ip', None)
+        body = resp.text
         proxy_ip = proxies['http'].split(':', 1)[0]
         self.assertIn(proxy_ip, body)

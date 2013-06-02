@@ -31,10 +31,10 @@ class Worker(Greenlet):
         task = self.itsy.pop()
         log.info("%d: Handling task: [%s] %s",
                  self.id, task.document_type, task.url)
-        raw = self.client.get(url=task.url, referer=task.referer)
+        r = self.client.get(url=task.url, referer=task.referer)
 
         handler = self.itsy.handlers[task.document_type]
-        doc = Document(task, raw)
+        doc = Document(task, r)
         result = handler(task, doc)
         if result:
             for new_task in result:
